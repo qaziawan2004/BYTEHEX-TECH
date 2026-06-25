@@ -630,3 +630,58 @@ body {
     font-size: 0.7rem;
   }
 }
+/* ===== DRAG & DROP STYLES ===== */
+.task-item {
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.task-item.dragging {
+  opacity: 0.4 !important;
+  transform: scale(1.02) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  border: 2px dashed #3b82f6 !important;
+  pointer-events: none;
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--text-muted);
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  opacity: 0.8;
+}
+
+.task-item:hover .drag-handle {
+  opacity: 0.7;
+}
+
+.task-item:active .drag-handle {
+  cursor: grabbing;
+}
+
+/* Make sure drag works */
+[data-task-id] {
+  cursor: default;
+}
+
+[data-task-id] .drag-handle {
+  cursor: grab;
+}
+
+@media (max-width: 768px) {
+  .drag-handle {
+    opacity: 0.5;
+    padding: 8px;
+  }
+}

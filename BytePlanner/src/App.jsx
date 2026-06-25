@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { filterTasks, getStats, generateId } from './utils/taskUtils';
-import AddTask from './Components/AddTask';
-import SearchFilter from './Components/SearchFilter';
-import Statistics from './Components/Statistics';
-import TaskList from './Components/TaskList';
-import ThemeToggle from './Components/ThemeToggle';
+import AddTask from './components/AddTask';
+import SearchFilter from './components/SearchFilter';
+import Statistics from './components/Statistics';
+import TaskList from './components/TaskList';
+import ThemeToggle from './components/ThemeToggle';
+import './index.css';
 import './App.css';
 
 const App = () => {
@@ -17,7 +18,6 @@ const App = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({ title: '', due: '', priority: 'Medium' });
-  const [draggedIndex, setDraggedIndex] = useState(null);
 
   // Theme
   useEffect(() => {
@@ -82,11 +82,18 @@ const App = () => {
 
   const cancelEdit = () => setEditingId(null);
 
-  // Drag & Drop - Updated to allow dragging to first position
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index);
+  // Drag & Drop - SIMPLIFIED VERSION
+  const [draggedItemId, setDraggedItemId] = useState(null);
+
+  const handleDragStart = (e, id) => {
+    setDraggedItemId(id);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index);
+    e.dataTransfer.setData('text/plain', id);
+    // For visual feedback
+    setTimeout(() => {
+      const el = document.querySelector(`[data-task-id="${id}"]`);
+      if (el) el.classList.add('dragging');
+    }, 0);
   };
 
   const handleDragOver = (e) => {
@@ -94,29 +101,45 @@ const App = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e, targetIndex) => {
+  const handleDrop = (e, targetId) => {
     e.preventDefault();
-    if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-    const filtered = filteredTasks;
-    if (draggedIndex >= filtered.length || targetIndex >= filtered.length) return;
-
-    const draggedTask = filtered[draggedIndex];
-    const targetTask = filtered[targetIndex];
     
-    const fullDraggedIdx = tasks.findIndex(t => t.id === draggedTask.id);
-    const fullTargetIdx = tasks.findIndex(t => t.id === targetTask.id);
+    const draggedId = e.dataTransfer.getData('text/plain');
     
-    if (fullDraggedIdx === -1 || fullTargetIdx === -1) return;
+    if (!draggedId || draggedId === targetId) {
+      setDraggedItemId(null);
+      return;
+    }
 
+    // Find indices
+    const draggedIndex = tasks.findIndex(t => t.id === draggedId);
+    const targetIndex = tasks.findIndex(t => t.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItemId(null);
+      return;
+    }
+
+    // Reorder
     const newTasks = [...tasks];
-    const [removed] = newTasks.splice(fullDraggedIdx, 1);
-    newTasks.splice(fullTargetIdx, 0, removed);
+    const [removed] = newTasks.splice(draggedIndex, 1);
+    newTasks.splice(targetIndex, 0, removed);
+    
     setTasks(newTasks);
-    setDraggedIndex(null);
+    setDraggedItemId(null);
+    
+    // Remove dragging class
+    document.querySelectorAll('.task-item.dragging').forEach(el => {
+      el.classList.remove('dragging');
+    });
   };
 
-  const handleDragEnd = () => setDraggedIndex(null);
+  const handleDragEnd = () => {
+    setDraggedItemId(null);
+    document.querySelectorAll('.task-item.dragging').forEach(el => {
+      el.classList.remove('dragging');
+    });
+  };
 
   // Computed
   const filteredTasks = filterTasks(tasks, filter, searchQuery);
@@ -127,7 +150,7 @@ const App = () => {
       {/* Header */}
       <div className="app-header">
         <h1 className="app-title">
-          <span className="brand">HexoTask</span><br />
+          <span className="brand">TaskFlow</span>
           <span className="subtitle">Advanced To-Do Management System</span>
         </h1>
         <ThemeToggle darkMode={darkMode} toggleTheme={toggleTheme} />
@@ -167,6 +190,7 @@ const App = () => {
           setEditData={setEditData}
           onSaveEdit={saveEdit}
           onCancelEdit={cancelEdit}
+          draggedItemId={draggedItemId}
         />
       </div>
     </div>
