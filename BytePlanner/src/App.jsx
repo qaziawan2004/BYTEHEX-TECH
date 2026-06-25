@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { filterTasks, getStats, generateId } from './utils/taskUtils';
-import AddTask from './components/AddTask';
-import SearchFilter from './components/SearchFilter';
-import Statistics from './components/Statistics';
-import TaskList from './components/TaskList';
-import ThemeToggle from './components/ThemeToggle';
+import AddTask from './Components/AddTask';
+import SearchFilter from './Components/SearchFilter';
+import Statistics from './Components/Statistics';
+import TaskList from './Components/TaskList';
+import ThemeToggle from './Components/ThemeToggle';
 import './App.css';
 
 const App = () => {
