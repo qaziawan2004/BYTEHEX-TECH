@@ -11,10 +11,7 @@ const Navbar = ({ darkMode, toggleTheme, onLeaderboardClick, onHistoryClick }) =
         <div>
           <span className="text-xl font-bold text-gray-900 dark:text-white">
             Brain<span className="text-purple-500 dark:text-purple-400">Sync</span>
-          </span>
-          <span className="hidden sm:inline text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
-            Quiz App
-          </span>
+            </span>
         </div>
       </div>
 
