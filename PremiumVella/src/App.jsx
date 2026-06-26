@@ -10,7 +10,7 @@ import QuickViewModal from './components/QuickViewModal';
 import Footer from './components/Footer';
 import './App.css';
 
-// Simple Toast Component
+// Toast Component
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -24,7 +24,7 @@ const Toast = ({ message, type, onClose }) => {
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white shadow-lg ${colors[type] || 'bg-gray-800'} animate-fade-in`}>
+    <div className={`fixed top-20 right-4 z-50 px-6 py-3 rounded-lg text-white shadow-lg ${colors[type] || 'bg-gray-800'} animate-fade-in`}>
       {message}
     </div>
   );

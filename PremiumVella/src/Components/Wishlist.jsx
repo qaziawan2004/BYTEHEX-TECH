@@ -38,7 +38,11 @@ const Wishlist = ({ isOpen, onClose, wishlist, onAddToCart, onToggleWishlist }) 
               <div className="space-y-4">
                 {wishlist.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
                     <div className="flex-1">
                       <h4 className="font-medium text-sm text-gray-900 dark:text-white">{item.name}</h4>
                       <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatPrice(item.price)}</p>

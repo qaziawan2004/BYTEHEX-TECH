@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  X, CreditCard, User, Mail, MapPin, Lock, Tag, 
-  Shield, Truck, Award, Sparkles, Zap, Crown,
-  ArrowLeft, CheckCircle, AlertCircle
+  X, CreditCard, ArrowLeft, CheckCircle, Minus, Plus, 
+  Shield, Truck, Award, Zap, ShoppingBag
 } from 'lucide-react';
 import { formatPrice, validateCheckout, applyDiscount } from '../utils/helpers';
 
-const CheckoutModal = ({ isOpen, onClose, cartTotal, onClearCart, showToast }) => {
+const CheckoutModal = ({ 
+  isOpen, onClose, cart, cartTotal, onUpdateQuantity, onRemove, onClearCart, showToast 
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,8 +20,14 @@ const CheckoutModal = ({ isOpen, onClose, cartTotal, onClearCart, showToast }) =
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setOrderComplete(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,6 +66,7 @@ const CheckoutModal = ({ isOpen, onClose, cartTotal, onClearCart, showToast }) =
   const handleSubmit = (e) => {
     e.preventDefault();
     const validationErrors = validateCheckout(formData);
+    
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       showToast('Please fix the errors', 'error');
@@ -66,265 +74,307 @@ const CheckoutModal = ({ isOpen, onClose, cartTotal, onClearCart, showToast }) =
     }
 
     setIsSubmitting(true);
+    
     setTimeout(() => {
+      onClearCart();
       setOrderComplete(true);
       setIsSubmitting(false);
-      showToast('🎉 Order placed successfully!', 'success');
+      showToast('🎉 Thanks for Shopping!', 'success');
       
       setTimeout(() => {
-        onClearCart();
         onClose();
-        setOrderComplete(false);
         setFormData({ name: '', email: '', address: '', cardNumber: '', expiry: '', cvv: '' });
         setDiscountApplied(0);
         setDiscountCode('');
-        setStep(1);
+        setOrderComplete(false);
       }, 2000);
-    }, 2000);
+      
+    }, 1500);
   };
 
   const finalTotal = cartTotal * (1 - discountApplied);
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const FieldIcon = ({ name, className = "w-5 h-5" }) => {
-    const icons = {
-      name: User,
-      email: Mail,
-      address: MapPin,
-      cardNumber: CreditCard,
-      expiry: Calendar,
-      cvv: Lock,
-    };
-    const Icon = icons[name] || User;
-    return <Icon className={className} />;
-  };
+  // Success View
+  if (orderComplete) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+        <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-3xl max-w-md w-full p-10 shadow-2xl animate-fade-in text-center border border-emerald-500/20">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400 rounded-t-3xl" />
+          <div className="w-24 h-24 mx-auto bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border-2 border-emerald-500/30">
+            <CheckCircle className="w-12 h-12 text-emerald-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-3">Order Complete! 🎉</h2>
+          <p className="text-gray-400 mb-2">Thank you for shopping with</p>
+          <p className="text-xl font-bold text-emerald-400 mb-6">PremiumVella</p>
+          <button 
+            onClick={() => {
+              onClose();
+              setOrderComplete(false);
+              setFormData({ name: '', email: '', address: '', cardNumber: '', expiry: '', cvv: '' });
+              setDiscountApplied(0);
+              setDiscountCode('');
+            }}
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white py-3.5 rounded-2xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content p-6 md:p-8">
-          {/* Header with Back Button */}
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={onClose}
-              className="back-button"
+    <div className="fixed inset-0 z-[55] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      
+      <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-hidden shadow-2xl border border-white/5 animate-fade-in">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
+        
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between p-6 bg-black/50 backdrop-blur-sm border-b border-white/5">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all duration-200 border border-white/5 hover:border-emerald-500/30"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to Cart</span>
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-gray-300">{itemCount} items</span>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Shop
+              <X className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                Secure Checkout
-              </span>
-            </div>
           </div>
+        </div>
 
-          {orderComplete ? (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="w-12 h-12 text-emerald-500" />
+        <div className="p-6 overflow-y-auto max-h-[calc(92vh-80px)] custom-scrollbar">
+          <div className="grid lg:grid-cols-5 gap-8">
+            {/* Left Column - Order Summary */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-6 bg-emerald-400 rounded-full" />
+                <h3 className="text-lg font-bold text-white">Order Summary</h3>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Order Complete! 🎉</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">Thank you for your purchase</p>
-              <button onClick={onClose} className="btn-primary mt-6">
-                Continue Shopping
-              </button>
+              
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {cart.map((item) => (
+                  <div key={item.id} className="group flex items-center gap-4 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-emerald-500/20">
+                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm text-white truncate">{item.name}</h4>
+                      <p className="text-sm font-bold text-emerald-400">{formatPrice(item.price)}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <button 
+                          onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} 
+                          className="w-7 h-7 rounded-full border border-white/10 hover:border-emerald-500/50 flex items-center justify-center hover:bg-emerald-500/10 transition-all duration-200 text-gray-400 hover:text-white"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-sm font-medium text-white w-6 text-center">{item.quantity}</span>
+                        <button 
+                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} 
+                          className="w-7 h-7 rounded-full border border-white/10 hover:border-emerald-500/50 flex items-center justify-center hover:bg-emerald-500/10 transition-all duration-200 text-gray-400 hover:text-white"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => onRemove(item.id)} 
+                      className="opacity-0 group-hover:opacity-100 p-2 rounded-xl hover:bg-rose-500/10 transition-all duration-200 text-rose-400 hover:text-rose-300"
+                    >
+                      <span className="text-xs font-medium">✕</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Trust Badges */}
+              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-white/5">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs text-gray-400">Secure</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-teal-400" />
+                    <span className="text-xs text-gray-400">Free Ship</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs text-gray-400">Premium</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cart Total */}
+              <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Total</span>
+                  <span className="text-2xl font-bold text-emerald-400">{formatPrice(cartTotal)}</span>
+                </div>
+              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Left Column - Form */}
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-emerald-500" />
-                    Shipping Details
-                  </h2>
 
-                  {/* Name */}
-                  <div className="checkout-field">
-                    <label>Full Name</label>
-                    <div className="input-wrapper">
-                      <User className="input-icon" />
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="John Doe"
-                        className={errors.name ? 'error' : ''}
-                      />
-                    </div>
-                    {errors.name && (
-                      <p className="error-text">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.name}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Email */}
-                  <div className="checkout-field">
-                    <label>Email Address</label>
-                    <div className="input-wrapper">
-                      <Mail className="input-icon" />
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="john@example.com"
-                        className={errors.email ? 'error' : ''}
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="error-text">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Address */}
-                  <div className="checkout-field">
-                    <label>Shipping Address</label>
-                    <div className="input-wrapper">
-                      <MapPin className="input-icon" style={{ top: '1rem' }} />
-                      <textarea
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        placeholder="123 Main St, City, State, ZIP"
-                        rows="2"
-                        className={errors.address ? 'error' : ''}
-                      />
-                    </div>
-                    {errors.address && (
-                      <p className="error-text">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.address}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Column - Payment */}
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-indigo-500" />
-                    Payment Details
-                  </h2>
-
-                  {/* Card Number */}
-                  <div className="checkout-field">
-                    <label>Card Number</label>
-                    <div className="input-wrapper">
-                      <CreditCard className="input-icon" />
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={handleChange}
-                        placeholder="1234 5678 9012 3456"
-                        className={errors.cardNumber ? 'error' : ''}
-                      />
-                    </div>
-                    {errors.cardNumber && (
-                      <p className="error-text">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.cardNumber}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Expiry & CVV */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="checkout-field">
-                      <label>Expiry Date</label>
-                      <input
-                        type="text"
-                        name="expiry"
-                        value={formData.expiry}
-                        onChange={handleChange}
-                        placeholder="MM/YY"
-                        className={errors.expiry ? 'error' : ''}
-                      />
-                      {errors.expiry && (
-                        <p className="error-text">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.expiry}
-                        </p>
-                      )}
-                    </div>
-                    <div className="checkout-field">
-                      <label>CVV</label>
-                      <div className="input-wrapper">
-                        <Lock className="input-icon" />
-                        <input
-                          type="password"
-                          name="cvv"
-                          value={formData.cvv}
-                          onChange={handleChange}
-                          placeholder="123"
-                          className={errors.cvv ? 'error' : ''}
-                        />
-                      </div>
-                      {errors.cvv && (
-                        <p className="error-text">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.cvv}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Discount Code */}
-                  <div className="checkout-field">
-                    <label>Discount Code</label>
-                    <div className="flex gap-2">
-                      <div className="input-wrapper flex-1">
-                        <Tag className="input-icon" />
-                        <input
-                          type="text"
-                          value={discountCode}
-                          onChange={(e) => setDiscountCode(e.target.value)}
-                          placeholder="SAVE10, WELCOME, etc."
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleDiscount}
-                        className="btn-secondary whitespace-nowrap px-4"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            {/* Right Column - Payment Form (No Icons) */}
+            <div className="lg:col-span-3">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-6 bg-emerald-400 rounded-full" />
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-emerald-400" />
+                  Payment Details
+                </h3>
               </div>
 
-              {/* Order Summary */}
-              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-indigo-50 dark:from-emerald-900/20 dark:to-indigo-900/20 border border-emerald-100 dark:border-emerald-800/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal</span>
-                  <span className="font-semibold">{formatPrice(cartTotal)}</span>
-                </div>
-                {discountApplied > 0 && (
-                  <div className="flex items-center justify-between mb-2 text-emerald-600 dark:text-emerald-400">
-                    <span className="text-sm">Discount ({discountApplied * 100}%)</span>
-                    <span>-{formatPrice(cartTotal * discountApplied)}</span>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name & Email - 2 Column */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Full Name</label>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      value={formData.name} 
+                      onChange={handleChange} 
+                      onFocus={() => setFocusedField('name')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="John Doe" 
+                      className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.name ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 ${focusedField === 'name' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                    />
+                    {errors.name && <p className="text-rose-400 text-xs mt-1.5">{errors.name}</p>}
                   </div>
-                )}
-                <div className="flex items-center justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800/30">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                    {formatPrice(finalTotal)}
-                  </span>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Email</label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      onFocus={() => setFocusedField('email')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="john@example.com" 
+                      className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.email ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 ${focusedField === 'email' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                    />
+                    {errors.email && <p className="text-rose-400 text-xs mt-1.5">{errors.email}</p>}
+                  </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-primary w-full mt-4 text-center flex items-center justify-center gap-2"
+                {/* Address */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Shipping Address</label>
+                  <textarea 
+                    name="address" 
+                    value={formData.address} 
+                    onChange={handleChange} 
+                    onFocus={() => setFocusedField('address')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="123 Main St, City, State, ZIP" 
+                    rows="2" 
+                    className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.address ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 resize-none ${focusedField === 'address' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                  />
+                  {errors.address && <p className="text-rose-400 text-xs mt-1.5">{errors.address}</p>}
+                </div>
+
+                {/* Card Number */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Card Number</label>
+                  <input 
+                    type="text" 
+                    name="cardNumber" 
+                    value={formData.cardNumber} 
+                    onChange={handleChange} 
+                    onFocus={() => setFocusedField('cardNumber')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="1234 5678 9012 3456" 
+                    className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.cardNumber ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 ${focusedField === 'cardNumber' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                  />
+                  {errors.cardNumber && <p className="text-rose-400 text-xs mt-1.5">{errors.cardNumber}</p>}
+                </div>
+
+                {/* Expiry & CVV */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Expiry</label>
+                    <input 
+                      type="text" 
+                      name="expiry" 
+                      value={formData.expiry} 
+                      onChange={handleChange} 
+                      onFocus={() => setFocusedField('expiry')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="MM/YY" 
+                      className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.expiry ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 ${focusedField === 'expiry' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                    />
+                    {errors.expiry && <p className="text-rose-400 text-xs mt-1.5">{errors.expiry}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">CVV</label>
+                    <input 
+                      type="password" 
+                      name="cvv" 
+                      value={formData.cvv} 
+                      onChange={handleChange} 
+                      onFocus={() => setFocusedField('cvv')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="123" 
+                      className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${errors.cvv ? 'border-rose-500' : 'border-white/10'} text-white placeholder-gray-500 focus:outline-none transition-all duration-200 ${focusedField === 'cvv' ? 'ring-2 ring-emerald-500/50' : ''}`} 
+                    />
+                    {errors.cvv && <p className="text-rose-400 text-xs mt-1.5">{errors.cvv}</p>}
+                  </div>
+                </div>
+
+                {/* Discount Code */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Discount Code</label>
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" 
+                      value={discountCode} 
+                      onChange={(e) => setDiscountCode(e.target.value)} 
+                      placeholder="SAVE10, WELCOME, etc." 
+                      className="flex-1 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleDiscount} 
+                      className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold rounded-2xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 whitespace-nowrap"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+
+                {/* Order Total */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20">
+                  <div className="flex justify-between text-sm text-gray-400">
+                    <span>Subtotal</span>
+                    <span>{formatPrice(cartTotal)}</span>
+                  </div>
+                  {discountApplied > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-400">
+                      <span>Discount ({discountApplied * 100}%)</span>
+                      <span>-{formatPrice(cartTotal * discountApplied)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xl font-bold text-white mt-2 pt-2 border-t border-white/10">
+                    <span>Total</span>
+                    <span className="text-emerald-400">{formatPrice(finalTotal)}</span>
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting || cart.length === 0} 
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 rounded-2xl font-bold transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 flex items-center justify-center gap-3 text-lg"
                 >
                   {isSubmitting ? (
                     <>
@@ -336,42 +386,18 @@ const CheckoutModal = ({ isOpen, onClose, cartTotal, onClearCart, showToast }) =
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4" />
+                      <Zap className="w-5 h-5" />
                       Place Order • {formatPrice(finalTotal)}
                     </>
                   )}
                 </button>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-emerald-500" />
-                  Secure Payment
-                </span>
-                <span className="flex items-center gap-1">
-                  <Truck className="w-3 h-3 text-indigo-500" />
-                  Free Shipping
-                </span>
-                <span className="flex items-center gap-1">
-                  <Award className="w-3 h-3 text-amber-500" />
-                  Guaranteed
-                </span>
-              </div>
-            </form>
-          )}
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-// Calendar icon for expiry
-const Calendar = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-);
 
 export default CheckoutModal;

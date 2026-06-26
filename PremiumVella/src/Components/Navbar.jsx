@@ -30,7 +30,6 @@ const Navbar = ({
             
             {/* Left Section - Logo & Brand */}
             <div className="flex items-center gap-3">
-              {/* Mobile Menu Toggle */}
               <button 
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-gray-800/50 transition-colors text-gray-400"
@@ -38,7 +37,6 @@ const Navbar = ({
                 {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
 
-              {/* Logo */}
               <a href="/" className="flex items-center gap-2.5 group">
                 <div className="relative">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300">
@@ -55,23 +53,21 @@ const Navbar = ({
               </a>
             </div>
 
-            {/* Center Section - Search Bar with MORE spacing */}
+            {/* Center Section - Search Bar (Icon Outside) */}
             <div className="hidden md:flex flex-1 max-w-xl mx-6">
-              <div className="relative w-full group">
-                {/* Search Icon - Positioned with more left padding */}
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+              <div className="relative w-full flex items-center">
+                {/* Search Icon - Positioned OUTSIDE the input */}
+                <div className="absolute left-0 flex items-center pointer-events-none z-10">
                   <Search className="h-4 w-4 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
                 </div>
-                {/* Input with increased left padding for more space */}
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-4 py-2.5 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 text-sm"
+                  className="w-full pl-8 pr-4 py-2.5 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 text-sm"
                 />
-                {/* Keyboard shortcut */}
-                <div className="absolute inset-y-0 right-0 pr-1.5 flex items-center">
+                <div className="absolute right-0 flex items-center pr-1.5">
                   <kbd className="hidden sm:inline-block px-2 py-1 text-[10px] font-semibold text-gray-500 bg-gray-800/50 rounded-md border border-gray-700/50">
                     ⌘K
                   </kbd>
@@ -128,8 +124,8 @@ const Navbar = ({
 
           {/* Mobile Search Bar */}
           <div className="md:hidden pb-3">
-            <div className="relative w-full">
-              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <div className="relative w-full flex items-center">
+              <div className="absolute left-0 flex items-center pointer-events-none z-10">
                 <Search className="h-4 w-4 text-gray-500" />
               </div>
               <input
@@ -137,7 +133,7 @@ const Navbar = ({
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-4 py-2.5 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 text-sm"
+                className="w-full pl-8 pr-4 py-2.5 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 text-sm"
               />
             </div>
           </div>

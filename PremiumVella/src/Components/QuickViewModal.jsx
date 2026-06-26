@@ -11,7 +11,7 @@ const QuickViewModal = ({
     <>
       <div className="modal-overlay" onClick={onClose} />
       <div className="modal-container">
-        <div className="modal-content p-6">
+        <div className="modal-content max-w-2xl p-6">
           {/* Header with Back Button */}
           <div className="flex items-center justify-between mb-4">
             <button
