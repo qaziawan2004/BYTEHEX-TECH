@@ -4,7 +4,7 @@ import Options from './Options';
 import Progress from './Progress';
 import Timer from './Timer';
 import Result from './Result';
-import { Sparkles, Play, Zap, Check, ChevronRight } from 'lucide-react';
+import { Sparkles, Play, Zap, Check, ChevronRight, Shuffle } from 'lucide-react';
 
 const QuizCard = ({ 
   currentQuestion,
@@ -25,12 +25,18 @@ const QuizCard = ({
   getCategoryColor,
   getAnswerIndex,
   isQuizStarted,
-  startQuiz
+  startQuiz,
+  selectedCategory,
+  selectedDifficulty
 }) => {
   const [isStarting, setIsStarting] = useState(false);
 
   // Start Screen
   if (!isQuizStarted) {
+    const categoryName = selectedCategory !== 'All' ? selectedCategory : 'All Topics';
+    const levelName = selectedDifficulty !== 'All' ? selectedDifficulty : 'Mixed';
+    const questionCount = totalQuestions;
+    
     return (
       <div className="quiz-card text-center py-12">
         <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mb-6 border-2 border-purple-500/30 animate-float">
@@ -39,9 +45,20 @@ const QuizCard = ({
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
           Ready to Test Your Knowledge?
         </h2>
+        <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+          <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
+            {categoryName}
+          </span>
+          <span className="px-3 py-1 rounded-full bg-gray-600/20 text-gray-400 text-sm font-medium">
+            {levelName}
+          </span>
+          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-medium">
+            {questionCount} Questions
+          </span>
+        </div>
         <p className="text-gray-400 mb-2 max-w-md mx-auto">
           You'll have <span className="text-purple-400 font-semibold">30 seconds</span> per question.
-          Choose the correct answer and see how many you can get right!
+          Questions are shuffled for a unique experience!
         </p>
         <div className="flex items-center justify-center gap-4 mt-4 text-sm text-gray-500">
           <span className="flex items-center gap-1">
@@ -55,8 +72,9 @@ const QuizCard = ({
           </span>
           <span className="w-px h-4 bg-gray-700" />
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-rose-400" />
-            Fun Facts
+            <span className="w-2 h-2 rounded-full bg-purple-400" />
+            <Shuffle className="w-3 h-3" />
+            Shuffled
           </span>
         </div>
         <button
@@ -67,7 +85,7 @@ const QuizCard = ({
               setIsStarting(false);
             }, 500);
           }}
-          disabled={isStarting}
+          disabled={isStarting || totalQuestions === 0}
           className="mt-8 btn-primary flex items-center gap-3 mx-auto text-lg px-8 py-3.5"
         >
           {isStarting ? (
@@ -85,6 +103,9 @@ const QuizCard = ({
             </>
           )}
         </button>
+        {totalQuestions === 0 && (
+          <p className="text-rose-400 text-sm mt-2">No questions available for this selection</p>
+        )}
       </div>
     );
   }
@@ -120,17 +141,19 @@ const QuizCard = ({
     <div className="quiz-card animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className={`category-badge ${categoryColor}`}>
             {currentQuestion?.category}
           </span>
-          <span className="text-xs text-gray-400 capitalize flex items-center gap-1">
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              currentQuestion?.difficulty === 'Easy' ? 'bg-emerald-400' :
-              currentQuestion?.difficulty === 'Medium' ? 'bg-amber-400' : 'bg-rose-400'
-            }`} />
-            {currentQuestion?.difficulty || 'Easy'}
-          </span>
+          {currentQuestion?.difficulty && (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+              currentQuestion.difficulty === 'Easy' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+              currentQuestion.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+              'bg-rose-500/20 text-rose-400 border-rose-500/30'
+            }`}>
+              {currentQuestion.difficulty}
+            </span>
+          )}
           {isAnswerConfirmed && (
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
               isCorrect ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'

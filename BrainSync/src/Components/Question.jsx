@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, Hash } from 'lucide-react';
+import { Hash } from 'lucide-react';
 
 const Question = ({ question, index, total }) => {
   return (
@@ -12,7 +12,7 @@ const Question = ({ question, index, total }) => {
           </span>
         </div>
       </div>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-relaxed">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-relaxed question-text">
         {question.question}
       </h2>
     </div>

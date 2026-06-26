@@ -12,7 +12,6 @@ const Options = ({
   const letters = ['A', 'B', 'C', 'D'];
 
   const getOptionClass = (index) => {
-    // If answer is confirmed, show correct/wrong
     if (isAnswerConfirmed) {
       if (index === correctAnswer) {
         return 'correct';
@@ -23,7 +22,6 @@ const Options = ({
       return 'disabled';
     }
 
-    // If not confirmed, just show selected state
     if (selectedAnswer === index) {
       return 'selected';
     }
@@ -66,7 +64,7 @@ const Options = ({
             <span className={`letter ${selected ? 'selected-letter' : ''}`}>
               {letters[index]}
             </span>
-            <span className="flex-1">{option}</span>
+            <span className="flex-1 option-text">{option}</span>
             {icon && (
               <span className="flex-shrink-0 ml-2">
                 {icon}

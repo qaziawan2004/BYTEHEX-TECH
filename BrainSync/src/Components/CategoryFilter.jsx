@@ -1,13 +1,15 @@
 import React from 'react';
 import { Zap, Code, Paintbrush, Layers } from 'lucide-react';
 
-const CategoryFilter = ({ selectedCategory, setSelectedCategory }) => {
+const CategoryFilter = ({ selectedCategory, setSelectedCategory, showFilters }) => {
   const categories = [
-    { name: 'All', icon: Layers, color: 'purple' },
-    { name: 'HTML', icon: Code, color: 'orange' },
-    { name: 'CSS', icon: Paintbrush, color: 'blue' },
-    { name: 'JavaScript', icon: Zap, color: 'yellow' },
+    { name: 'All', icon: Layers, color: 'purple', description: 'All Topics' },
+    { name: 'HTML', icon: Code, color: 'orange', description: 'HTML' },
+    { name: 'CSS', icon: Paintbrush, color: 'blue', description: 'CSS' },
+    { name: 'JavaScript', icon: Zap, color: 'yellow', description: 'JavaScript' },
   ];
+
+  if (!showFilters) return null;
 
   const getColorClasses = (color, isActive) => {
     const colors = {
@@ -32,19 +34,22 @@ const CategoryFilter = ({ selectedCategory, setSelectedCategory }) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-2 mb-6">
-      {categories.map(({ name, icon: Icon, color }) => {
+    <div className="flex flex-wrap gap-3 mb-6">
+      <div className="w-full mb-2">
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Select Topic</h3>
+      </div>
+      {categories.map(({ name, icon: Icon, color, description }) => {
         const isActive = selectedCategory === name;
         return (
           <button
             key={name}
             onClick={() => setSelectedCategory(name)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-300 font-medium text-sm ${getColorClasses(color, isActive)}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl border-2 transition-all duration-300 font-medium text-sm ${getColorClasses(color, isActive)}`}
           >
-            <Icon className={`w-4 h-4 ${isActive ? 'text-white' : ''}`} />
-            <span>{name}</span>
+            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
+            <span className="category-filter-text">{description}</span>
             {isActive && (
-              <span className="ml-1 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="ml-1 w-2 h-2 rounded-full bg-white animate-pulse" />
             )}
           </button>
         );

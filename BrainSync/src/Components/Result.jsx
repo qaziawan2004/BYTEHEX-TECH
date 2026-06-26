@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, CheckCircle, XCircle, RefreshCw, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Trophy, CheckCircle, XCircle, RefreshCw, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
 import { allQuestions } from '../data/questions';
 
 const Result = ({ score, total, answers, onReset }) => {
@@ -10,13 +10,13 @@ const Result = ({ score, total, answers, onReset }) => {
   const wrongCount = answers.filter(a => !a.isCorrect && !a.isSkipped).length;
   const skippedCount = answers.filter(a => a.isSkipped).length;
 
-  // Get wrong answers with questions
+  // Get wrong answers (excluding skipped)
   const wrongAnswers = answers
     .map((answer, index) => {
       const question = allQuestions.find(q => q.id === answer.questionId);
       return { ...answer, question, index };
     })
-    .filter(a => !a.isCorrect);
+    .filter(a => !a.isCorrect && !a.isSkipped);
 
   const getGrade = () => {
     if (percentage >= 90) return { emoji: '🌟', text: 'Excellent!', color: 'text-emerald-400' };
@@ -29,6 +29,7 @@ const Result = ({ score, total, answers, onReset }) => {
 
   return (
     <div className="text-center">
+      {/* Score */}
       <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full flex items-center justify-center mb-6 border-2 border-purple-500/20 animate-float">
         <Trophy className="w-12 h-12 text-purple-400" />
       </div>
@@ -47,6 +48,7 @@ const Result = ({ score, total, answers, onReset }) => {
         You got <span className="text-white font-bold">{percentage}%</span> correct!
       </p>
 
+      {/* Stats Grid - Now shows correct/wrong/skipped separately */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         <div className="stat-card">
           <div className="stat-value text-emerald-400">{correctCount}</div>
@@ -66,7 +68,7 @@ const Result = ({ score, total, answers, onReset }) => {
         </div>
       </div>
 
-      {/* Wrong Answers Section */}
+      {/* Wrong Answers Section - Only shows actually wrong answers, not skipped */}
       {wrongAnswers.length > 0 && (
         <div className="mb-6">
           <button
@@ -76,7 +78,7 @@ const Result = ({ score, total, answers, onReset }) => {
             {showWrongAnswers ? (
               <>
                 <EyeOff className="w-4 h-4" />
-                Hide Wrong Answers
+                Hide Wrong Answers ({wrongAnswers.length})
               </>
             ) : (
               <>
@@ -106,6 +108,12 @@ const Result = ({ score, total, answers, onReset }) => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {wrongAnswers.length === 0 && total > 0 && (
+        <div className="mb-6 text-emerald-400 text-sm">
+          🎉 Perfect! No wrong answers!
         </div>
       )}
 
