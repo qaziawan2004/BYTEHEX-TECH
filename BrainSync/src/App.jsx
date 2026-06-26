@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useQuiz } from './hooks/useQuiz';
-import Navbar from './components/Navbar';            
-import CategoryFilter from './components/CategoryFilter';  
-import DifficultyFilter from './Components/DifficultyFilter'; 
-import QuizCard from './components/QuizCard';       
-import Footer from './components/Footer';           
-import Leaderboard from './components/Leaderboard'; 
-import History from './components/History';         
+import Navbar from './components/Navbar';
+import CategoryFilter from './components/CategoryFilter';
+import DifficultyFilter from './components/DifficultyFilter';
+import QuizCard from './components/QuizCard';
+import Footer from './components/Footer';
+import Leaderboard from './components/Leaderboard';
+import History from './components/History';
 import './App.css';
 
 const App = () => {
