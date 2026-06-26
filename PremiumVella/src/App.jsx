@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from './hooks/useCart';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { products as initialProducts } from './data/products';
-import Navbar from './components/Navbar';
-import ProductList from './components/ProductList';
-import Cart from './components/Cart';
-import Wishlist from './components/Wishlist';
-import QuickViewModal from './components/QuickViewModal';
-import Footer from './components/Footer';
+import Navbar from './Components/Navbar';
+import ProductList from './Components/ProductList';
+import Cart from './Components/Cart';
+import Wishlist from './Components/Wishlist';
+import QuickViewModal from './Components/QuickViewModal';
+import Footer from './Components/Footer';
 import './App.css';
 
 // Toast Component
@@ -42,7 +42,6 @@ const App = () => {
   const { cart, cartTotal, cartCount, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
   const [wishlist, setWishlist] = useLocalStorage('wishlist', []);
 
-  // Theme
   useEffect(() => {
     const theme = localStorage.getItem('store_theme');
     if (theme === 'dark') {
