@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioForge · WebAudio Synthesizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <span class="icon">🎵</span>
+                <h1>AUDIOFORGE</h1>
+                <span class="subtitle">WebAudio Synthesizer</span>
+            </div>
+            <div class="badges">
+                <span class="badge">⚡ Working</span>
+                <span class="badge">🎹 MIDI Ready</span>
+                <span class="badge">🎛️ 3D Audio</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Controls -->
+            <section class="controls-panel">
+                <div class="control-group">
+                    <h3>🎵 Oscillator</h3>
+                    <div class="control-row">
+                        <label>Waveform</label>
+                        <select id="waveform">
+                            <option value="sine">Sine</option>
+                            <option value="square">Square</option>
+                            <option value="sawtooth">Sawtooth</option>
+                            <option value="triangle">Triangle</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Frequency</label>
+                        <input type="range" id="frequency" min="20" max="2000" value="440" step="1">
+                        <span id="frequency-value">440 Hz</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Volume</label>
+                        <input type="range" id="gain" min="0" max="1" value="0.5" step="0.01">
+                        <span id="gain-value">50%</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>🎛️ Envelope (ADSR)</h3>
+                    <div class="control-row">
+                        <label>Attack</label>
+                        <input type="range" id="attack" min="0" max="1" value="0.1" step="0.01">
+                        <span id="attack-value">0.10s</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Decay</label>
+                        <input type="range" id="decay" min="0" max="1" value="0.2" step="0.01">
+                        <span id="decay-value">0.20s</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Sustain</label>
+                        <input type="range" id="sustain" min="0" max="1" value="0.7" step="0.01">
+                        <span id="sustain-value">0.70</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Release</label>
+                        <input type="range" id="release" min="0" max="2" value="0.5" step="0.01">
+                        <span id="release-value">0.50s</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>✨ Bonus Features</h3>
+                    <div class="control-row">
+                        <button id="midi-toggle" class="btn btn-primary">🎹 Enable MIDI</button>
+                        <span id="midi-status">Not connected</span>
+                    </div>
+                    <div class="control-row">
+                        <button id="save-preset" class="btn btn-secondary">💾 Save Preset</button>
+                        <button id="load-preset" class="btn btn-secondary">📂 Load Preset</button>
+                        <input type="file" id="preset-file" accept=".json" style="display:none">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>🌐 3D Position</h3>
+                    <div class="control-row">
+                        <label>X</label>
+                        <input type="range" id="pos-x" min="-10" max="10" value="0" step="0.1">
+                        <span id="pos-x-value">0.0</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Y</label>
+                        <input type="range" id="pos-y" min="-10" max="10" value="0" step="0.1">
+                        <span id="pos-y-value">0.0</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Z</label>
+                        <input type="range" id="pos-z" min="-10" max="10" value="0" step="0.1">
+                        <span id="pos-z-value">0.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group" style="background: #2a2a4a; border-color: #6c5ce7;">
+                    <h3>🎯 TEST AUDIO</h3>
+                    <div class="control-row">
+                        <button id="test-audio-btn" class="btn btn-primary" style="flex:1; padding:12px; font-size:16px;">
+                            🔊 PLAY TEST SOUND
+                        </button>
+                    </div>
+                    <div class="control-row">
+                        <button id="stop-test-btn" class="btn btn-secondary" style="flex:1; padding:12px; font-size:16px;">
+                            ⏹️ STOP
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visualizations -->
+            <section class="visualization-panel">
+                <div class="visualization-container">
+                    <h3>📊 Waveform</h3>
+                    <canvas id="waveform-canvas"></canvas>
+                </div>
+                <div class="visualization-container">
+                    <h3>📊 Spectrum</h3>
+                    <canvas id="spectrum-canvas"></canvas>
+                </div>
+                <div class="visualization-container">
+                    <h3>📍 3D Space</h3>
+                    <canvas id="spatial-canvas"></canvas>
+                </div>
+            </section>
+        </main>
+
+        <!-- Keyboard -->
+        <section class="keyboard-container">
+            <div id="keyboard"></div>
+            <div class="keyboard-info">
+                <span>🎹 Click keys or use QWERTY: Q W E R T Y U I O P [ ]</span>
+                <span id="status-text" style="color:#6c5ce7;">Ready</span>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-content">
+                <span>🎵 AudioForge v2.0</span>
+                <span id="fps-display">⚡ 60 FPS</span>
+                <span id="audio-status">🔇 Click to start</span>
+            </div>
+        </footer>
+    </div>
+
+    <script type="module" src="./script.js"></script>
+</body>
+</html>
