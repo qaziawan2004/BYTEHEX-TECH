@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="info">
+    <div class="logo">⚡ <span>NEXUSGRID</span></div>
+    <div class="subtitle">3D Spatial Matrix Engine</div>
+    <div class="badge-container">
+      <span class="badge">✨ All Bonuses</span>
+    </div>
+  </div>
+  
+  <div id="model-status">📦 Loading external model...</div>
+  
+  <div id="stats-container"></div>
+  
+  <div id="controls-hint">
+    🖱️ Drag to rotate · Scroll to zoom · <kbd>Space</kbd> cinematic
+  </div>
+  
+  <button id="xr-button">🌐 Enter VR/AR</button>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js",
+        "stats.js": "https://unpkg.com/stats.js@0.17.0/src/Stats.js"
+      }
+    }
+  </script>
+
+  <script type="module" src="./script.js"></script>
+</body>
+</html>
