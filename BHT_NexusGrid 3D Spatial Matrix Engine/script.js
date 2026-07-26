@@ -467,9 +467,9 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// ============================================================
+// ====================================
 // CONSOLE WELCOME
-// ============================================================
+// ====================================
 console.log('%c⚡ NEXUSGRID · 3D Spatial Matrix Engine', 'font-size: 20px; font-weight: bold; color: #ffd866;');
 console.log('%c✅ ALL BONUSES IMPLEMENTED:', 'font-size: 14px; font-weight: bold;');
 console.log('  1. ✅ External 3D Models (GLTF/FBX/OBJ)');
