@@ -1,65 +1,46 @@
-# Algorithmic Canvas
+# Algorithmic Canvas — Mathematical Generative Art System
 
-A mathematical creative-coding canvas and generative art system, built with **React + Vite + Tailwind CSS**. All rendering happens on a single `<canvas>` element driven by five distinct procedural algorithms, with live parameter controls, an interactive palette editor, and export to PNG / PDF / video.
+A browser-based generative art studio built with React and Tailwind CSS.
+Everything renders on `<canvas>` in real time, driven entirely by JavaScript math — no images, no external art assets.
 
-## Setup
+## Running it
 
 ```bash
 npm install
-npm run dev
+npm run dev       # start the dev server
+npm run build      # production build to /dist
+npm run preview    # preview the production build
 ```
 
-Then open the printed local URL (typically `http://localhost:5173`).
+Requires Node 18+.
 
-Build a production bundle with:
+## What's inside
 
-```bash
-npm run build
-npm run preview
-```
+- **Four procedural art modes** — Flow Field, Mandala, Harmonograph, Orbitals — each a distinct mathematical system (noise fields, harmonic symmetry, Lissajous curves, gravity), switchable live.
+- **Real-time parameter controls** — speed, density, complexity, line weight, trail persistence, symmetry — reshape the running animation instantly.
+- **Generate** — a rule-based generative engine proposes a new mode + parameter set + color palette in one click, entirely offline.
+- **Interactive color palette editor** — edit any color live, add/remove swatches, or pick a curated preset.
+- **Canvas interaction** — every mode responds to mouse, touch, and drag directly on the canvas (see in-app "Field Notes" for the specifics of each mode).
+- **High-resolution export** — PNG and PDF export at 1×/2×/4×. Rather than upscaling the on-screen bitmap, the export re-simulates the current piece at full target resolution, so detail stays sharp.
+- **Video recording** — captures the live canvas straight to a `.webm` file via `MediaRecorder`.
+- **Documentation** — an in-app "Field Notes" panel explains every control; this file plus the live app together serve as the demo and docs.
+- **Responsive layout** — the control rail stacks below the canvas on narrow screens and sits beside it on wide ones; touch targets are sized for mobile; the canvas itself resizes via `ResizeObserver` and redraws at the correct pixel density on any viewport.
+- **Performance** — the render loop uses `requestAnimationFrame` with delta-time integration (motion speed is independent of frame rate), and the header shows a live FPS readout.
 
-## Stack
-
-- **React 18** for UI
-- **Vite** for dev server / bundling
-- **Tailwind CSS** — directives live in `src/App.css` (imported once in `src/main.jsx`), configured via `tailwind.config.js` + `postcss.config.js`
-- **jsPDF** for PDF export
-- Everything else (animation, math, canvas rendering) is plain JavaScript / Canvas 2D — no charting or graphics library.
-
-## Project structure
+## Architecture
 
 ```
 src/
-  engine/
-    patterns.js             five procedural art modes + shared math helpers
-    useAnimationEngine.js   requestAnimationFrame loop, resize + pointer handling
+  artModes.js              four art algorithms, each an { init, step } pair
+  utils.js                 noise function, palette generation, download helper
+  App.jsx                  layout + top-level state
+  App.css                  Tailwind directives + custom component styles
   components/
-    CanvasStage.jsx         canvas + plotter bezel + coordinate readout
-    ControlPanel.jsx        mode selector + parameter sliders
-    PaletteEditor.jsx       color palette editor (bonus)
-    ExportPanel.jsx         PNG / PDF / video export (bonus)
-    DocsPanel.jsx           in-app manual
-    Header.jsx              title bar, play/pause, auto-demo
-  utils/
-    palettes.js             preset palettes + color math
-    exportUtils.js           PNG/PDF/video download helpers
-  App.jsx                   wires everything together, owns state
-  App.css                   Tailwind directives + custom styles
+    CanvasStage.jsx         canvas lifecycle, animation loop, export, recording
+    ControlRail.jsx          mode picker, sliders, generate button
+    PaletteEditor.jsx        color editor
+    ExportPanel.jsx          PNG/PDF export + video recording UI
+    Documentation.jsx        in-app manual
 ```
 
-## Core features
-
-- Five mathematically distinct animation modes (flow field, spirograph, fractal tree, Lissajous curves, particle orbit)
-- Fully responsive canvas (`ResizeObserver` + device-pixel-ratio scaling, capped at 2x for performance)
-- Pointer interaction unique to each mode (attract particles, bend curves, steer wind, relocate gravity wells)
-- PNG artwork export
-- Delta-time driven render loop, translucent-fill trails instead of per-frame clears, and particle counts tuned for sustained frame rate
-- In-app manual (header → MANUAL)
-- Auto-demo mode that cycles modes/params/palettes hands-free — doubles as a live demo
-
-## Bonus features implemented
-
-1. **Interactive color palette editor** — live swatches, add/remove colors, presets, one-click randomizer
-2. **High-resolution PNG/PDF export** — re-simulates the current mode offscreen at 3x resolution rather than upscaling pixels
-3. **Animation recording to video** — records the live canvas to a downloadable `.webm` via `MediaRecorder` + `canvas.captureStream()`
-4. **Multiple procedural art modes** — five, switchable at any time without losing per-mode parameter settings
+Each art mode is a plain `{ init(w, h, params), step(state, ctx, w, h, t, dt, params, palette, pointer) }` pair, so adding a new mode means writing one new file entry — no changes needed elsewhere.
