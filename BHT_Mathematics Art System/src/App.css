@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #0a0c0f;
+}
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: #eef1f5;
+}
+
+/* ---------- scrollbars ---------- */
+.plotter-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.plotter-scroll::-webkit-scrollbar-track {
+  background: #14171b;
+}
+.plotter-scroll::-webkit-scrollbar-thumb {
+  background: #262b31;
+  border-radius: 4px;
+}
+.plotter-scroll::-webkit-scrollbar-thumb:hover {
+  background: #34393f;
+}
+
+/* ---------- range sliders ---------- */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  background: #262b31;
+  border-radius: 2px;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #5bb8ff;
+  box-shadow: 0 0 0 3px rgba(91, 184, 255, 0.15);
+  cursor: pointer;
+  margin-top: -5px;
+}
+input[type='range']::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #5bb8ff;
+  border: none;
+  box-shadow: 0 0 0 3px rgba(91, 184, 255, 0.15);
+  cursor: pointer;
+}
+input[type='range']::-moz-range-track {
+  height: 3px;
+  background: #262b31;
+  border-radius: 2px;
+}
+
+/* ---------- color swatch inputs ---------- */
+input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type='color']::-webkit-color-swatch {
+  border: 1px solid #262b31;
+  border-radius: 6px;
+}
+input[type='color']::-moz-color-swatch {
+  border: 1px solid #262b31;
+  border-radius: 6px;
+}
+
+/* ---------- graph-paper grid backdrop ---------- */
+.graph-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
