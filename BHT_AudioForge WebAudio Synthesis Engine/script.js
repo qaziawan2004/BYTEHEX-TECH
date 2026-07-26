@@ -1,4 +1,4 @@
- 'use strict';
+  'use strict';
 
   /* ============================================================
      STATE
@@ -17,11 +17,19 @@
     spatialX:0,          // -1..1
     spatialZ:0,          // -1..1 (0 = default distance)
     spatialElevation:0,  // -1..1
-    masterVolume:0.7
+    masterVolume:0.7,
+    micDrive:0.3,
+    micDelay:0.25,
+    micFeedback:0.3,
+    micMix:0.8,
+    seqTempo:120
   };
 
   let audioCtx=null, masterGain=null, filterNode=null, pannerNode=null, analyser=null;
   let waveData=null, freqData=null;
+  let micStream=null, micSource=null, micGain=null, micDriveNode=null, micDelayNode=null, micFeedbackGain=null, micWetGain=null;
+  let recDest=null, recorder=null, recChunks=[], recStartTime=0, recTimerId=null;
+  let noiseBufferCache=null;
   const activeVoices = new Map();
   let lastFreq = 261.63;
 
@@ -181,6 +189,28 @@
     onChange:(v)=>{ state.masterVolume = v; if(masterGain) masterGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.01); }
   });
 
+  knobs.micDrive = createKnob(document.getElementById('micKnobs'), {
+    label:'Drive', min:0, max:1, value:state.micDrive, decimals:2, unit:'',
+    onChange:(v)=>{ state.micDrive = v; if(micDriveNode) micDriveNode.curve = makeDistortionCurve(v); }
+  });
+  knobs.micDelay = createKnob(document.getElementById('micKnobs'), {
+    label:'Delay', min:0.02, max:0.6, value:state.micDelay, decimals:2, unit:'s',
+    onChange:(v)=>{ state.micDelay = v; if(micDelayNode) micDelayNode.delayTime.setTargetAtTime(v, audioCtx.currentTime, 0.02); }
+  });
+  knobs.micFeedback = createKnob(document.getElementById('micKnobs'), {
+    label:'Feedback', min:0, max:0.85, value:state.micFeedback, decimals:2, unit:'',
+    onChange:(v)=>{ state.micFeedback = v; if(micFeedbackGain) micFeedbackGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.02); }
+  });
+  knobs.micMix = createKnob(document.getElementById('micKnobs'), {
+    label:'Mix', min:0, max:1, value:state.micMix, decimals:2, unit:'',
+    onChange:(v)=>{ state.micMix = v; if(micWetGain) micWetGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.02); }
+  });
+
+  knobs.seqTempo = createKnob(document.getElementById('seqKnobs'), {
+    label:'Tempo', min:60, max:200, value:state.seqTempo, decimals:0, unit:'bpm',
+    onChange:(v)=>{ state.seqTempo = v; }
+  });
+
   /* ============================================================
      WAVEFORM + OCTAVE CONTROLS
   ============================================================ */
@@ -273,8 +303,43 @@
     masterGain.connect(analyser);
     analyser.connect(audioCtx.destination);
 
+    recDest = audioCtx.createMediaStreamDestination();
+    analyser.connect(recDest);
+
+    // Mic FX chain: micGain -> waveshaper(drive) -> delay(+feedback) -> micWetGain -> masterGain
+    micGain = audioCtx.createGain();
+    micGain.gain.value = 1;
+    micDriveNode = audioCtx.createWaveShaper();
+    micDriveNode.curve = makeDistortionCurve(state.micDrive);
+    micDriveNode.oversample = '2x';
+    micDelayNode = audioCtx.createDelay(1.0);
+    micDelayNode.delayTime.value = state.micDelay;
+    micFeedbackGain = audioCtx.createGain();
+    micFeedbackGain.gain.value = state.micFeedback;
+    micWetGain = audioCtx.createGain();
+    micWetGain.gain.value = state.micMix;
+
+    micGain.connect(micDriveNode);
+    micDriveNode.connect(micDelayNode);
+    micDelayNode.connect(micFeedbackGain);
+    micFeedbackGain.connect(micDelayNode);
+    micDriveNode.connect(micWetGain);
+    micDelayNode.connect(micWetGain);
+    micWetGain.connect(masterGain);
+
     updatePanner();
     initMIDI();
+  }
+
+  function makeDistortionCurve(amount){
+    const k = amount * 100;
+    const n = 2048;
+    const curve = new Float32Array(n);
+    for(let i=0;i<n;i++){
+      const x = (i*2)/n - 1;
+      curve[i] = k <= 0.001 ? x : ((3+k)*x*20*(Math.PI/180)) / (Math.PI + k*Math.abs(x));
+    }
+    return curve;
   }
 
   function midiToFreq(note){ return 440 * Math.pow(2, (note-69)/12); }
@@ -322,6 +387,278 @@
     voice.osc.stop(now + state.envRelease + 0.03);
     activeVoices.delete(id);
   }
+
+  /* ============================================================
+     MIC FX (live microphone effects)
+  ============================================================ */
+  const micToggleBtn = document.getElementById('micToggle');
+  const micStatusEl = document.getElementById('micStatus');
+  let micOn = false;
+
+  micToggleBtn.addEventListener('click', async ()=>{
+    initAudio();
+    if(!micOn){
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        micStatusEl.textContent = 'Mic — not supported in this browser';
+        return;
+      }
+      try{
+        micStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(micGain);
+        micOn = true;
+        micToggleBtn.textContent = 'DISABLE MIC';
+        micStatusEl.textContent = 'Mic — live. Use headphones to avoid feedback.';
+      }catch(err){
+        micStatusEl.textContent = 'Mic — unavailable (' + (err && err.message ? err.message : 'permission denied') + ')';
+      }
+    } else {
+      if(micSource) micSource.disconnect();
+      if(micStream) micStream.getTracks().forEach(t=>t.stop());
+      micStream = null; micSource = null;
+      micOn = false;
+      micToggleBtn.textContent = 'ENABLE MIC';
+      micStatusEl.textContent = 'Mic — off. Use headphones to avoid feedback.';
+    }
+  });
+
+  /* ============================================================
+     RECORDER (captures everything through Master)
+  ============================================================ */
+  const recToggleBtn = document.getElementById('recToggle');
+  const recTimeEl = document.getElementById('recTime');
+  const recNoteEl = document.getElementById('recNote');
+  const recDownloadWrap = document.getElementById('recDownloadWrap');
+  const recPlaybackEl = document.getElementById('recPlayback');
+  const recDownloadLink = document.getElementById('recDownloadLink');
+  let recording = false;
+
+  function pickRecMime(){
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+    for(const m of candidates){
+      if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+    }
+    return '';
+  }
+
+  function formatRecTime(ms){
+    const totalSec = Math.floor(ms/1000);
+    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const s = String(totalSec%60).padStart(2,'0');
+    return m+':'+s;
+  }
+
+  function tickRecTimer(){
+    recTimeEl.textContent = formatRecTime(performance.now() - recStartTime);
+  }
+
+  recToggleBtn.addEventListener('click', ()=>{
+    initAudio();
+    if(audioCtx.state !== 'running') audioCtx.resume();
+
+    if(!window.MediaRecorder || !recDest){
+      recNoteEl.textContent = 'Recording is not supported in this browser.';
+      return;
+    }
+
+    if(!recording){
+      recDownloadWrap.hidden = true;
+      recChunks = [];
+      const mime = pickRecMime();
+      try{
+        recorder = mime ? new MediaRecorder(recDest.stream, { mimeType: mime }) : new MediaRecorder(recDest.stream);
+      }catch(err){
+        recNoteEl.textContent = 'Could not start recorder: ' + (err && err.message ? err.message : 'unknown error');
+        return;
+      }
+      recorder.ondataavailable = (e)=>{ if(e.data && e.data.size) recChunks.push(e.data); };
+      recorder.onstop = ()=>{
+        const blob = new Blob(recChunks, { type: recorder.mimeType || 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        recPlaybackEl.src = url;
+        const ext = (recorder.mimeType || '').includes('mp4') ? 'm4a' : (recorder.mimeType || '').includes('ogg') ? 'ogg' : 'webm';
+        recDownloadLink.href = url;
+        recDownloadLink.download = 'signal-rack-take-' + Date.now() + '.' + ext;
+        recDownloadWrap.hidden = false;
+        recNoteEl.textContent = 'Recording ready — play it back or download it below.';
+      };
+      recorder.start();
+      recStartTime = performance.now();
+      recTimerId = setInterval(tickRecTimer, 250);
+      recording = true;
+      recToggleBtn.classList.add('recording');
+      recNoteEl.textContent = 'Recording everything through Master…';
+    } else {
+      recorder.stop();
+      clearInterval(recTimerId);
+      recTimerId = null;
+      recording = false;
+      recToggleBtn.classList.remove('recording');
+    }
+  });
+
+
+  /* ============================================================
+     DRUM SYNTHESIS (for the sequencer)
+  ============================================================ */
+  function getNoiseBuffer(){
+    if(noiseBufferCache) return noiseBufferCache;
+    const bufferSize = audioCtx.sampleRate * 1;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+    noiseBufferCache = buffer;
+    return buffer;
+  }
+
+  function triggerKick(time){
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(40, time+0.15);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(1, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time+0.28);
+    osc.connect(g); g.connect(masterGain);
+    osc.start(time); osc.stop(time+0.3);
+  }
+
+  function triggerSnare(time){
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.9;
+    const ng = audioCtx.createGain();
+    ng.gain.setValueAtTime(0.9, time);
+    ng.gain.exponentialRampToValueAtTime(0.001, time+0.18);
+    noise.connect(bp); bp.connect(ng); ng.connect(masterGain);
+    noise.start(time); noise.stop(time+0.2);
+
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(180, time);
+    const og = audioCtx.createGain();
+    og.gain.setValueAtTime(0.5, time);
+    og.gain.exponentialRampToValueAtTime(0.001, time+0.12);
+    osc.connect(og); og.connect(masterGain);
+    osc.start(time); osc.stop(time+0.14);
+  }
+
+  function triggerHat(time){
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 7000;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.5, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time+0.05);
+    noise.connect(hp); hp.connect(g); g.connect(masterGain);
+    noise.start(time); noise.stop(time+0.06);
+  }
+
+  function triggerSeqLead(time, freq){
+    const dur = seqStepSeconds() * 0.9;
+    const osc = audioCtx.createOscillator();
+    osc.type = state.waveform;
+    osc.frequency.setValueAtTime(freq * Math.pow(2, state.oscDetune/1200), time);
+    const envGain = audioCtx.createGain();
+    envGain.gain.setValueAtTime(0, time);
+    envGain.gain.linearRampToValueAtTime(1, time + Math.min(state.envAttack, dur*0.4));
+    envGain.gain.linearRampToValueAtTime(Math.max(0.0001, state.envSustain), time + Math.min(state.envAttack+state.envDecay, dur*0.7));
+    const releaseStart = time + dur;
+    envGain.gain.setTargetAtTime(0.0001, releaseStart, Math.max(0.02, state.envRelease/3));
+    osc.connect(envGain); envGain.connect(filterNode);
+    osc.start(time);
+    osc.stop(releaseStart + state.envRelease + 0.05);
+  }
+
+  /* ============================================================
+     SEQUENCER (multi-track, sample-accurate lookahead clock)
+  ============================================================ */
+  const SEQ_STEPS = 16;
+  const seq = {
+    playing:false,
+    currentStep:0,
+    nextNoteTime:0,
+    timerId:null,
+    tracks:{
+      kick:new Array(SEQ_STEPS).fill(false),
+      snare:new Array(SEQ_STEPS).fill(false),
+      hat:new Array(SEQ_STEPS).fill(false),
+      lead:new Array(SEQ_STEPS).fill(false)
+    }
+  };
+  const SEQ_TRACK_ORDER = ['kick','snare','hat','lead'];
+  const SEQ_LEAD_NOTE = 261.63; // C4, shifted by the Oscillator module's octave control
+
+  function seqStepSeconds(){
+    return 60 / state.seqTempo / 4; // 16th notes
+  }
+
+  function seqScheduleStep(step, time){
+    if(seq.tracks.kick[step]) triggerKick(time);
+    if(seq.tracks.snare[step]) triggerSnare(time);
+    if(seq.tracks.hat[step]) triggerHat(time);
+    if(seq.tracks.lead[step]) triggerSeqLead(time, SEQ_LEAD_NOTE * Math.pow(2, state.octave));
+
+    const delayMs = Math.max(0, (time - audioCtx.currentTime) * 1000);
+    setTimeout(()=> seqUpdatePlayhead(step), delayMs);
+  }
+
+  function seqScheduler(){
+    while(seq.nextNoteTime < audioCtx.currentTime + 0.1){
+      seqScheduleStep(seq.currentStep, seq.nextNoteTime);
+      seq.nextNoteTime += seqStepSeconds();
+      seq.currentStep = (seq.currentStep + 1) % SEQ_STEPS;
+    }
+  }
+
+  function seqUpdatePlayhead(step){
+    document.querySelectorAll('.seq-cell').forEach(c=>c.classList.remove('playhead'));
+    if(!seq.playing) return;
+    document.querySelectorAll('.seq-cell[data-step="'+step+'"]').forEach(c=>c.classList.add('playhead'));
+  }
+
+  const seqPlayBtn = document.getElementById('seqPlay');
+  seqPlayBtn.addEventListener('click', ()=>{
+    initAudio();
+    if(audioCtx.state !== 'running') audioCtx.resume();
+    if(!seq.playing){
+      seq.playing = true;
+      seq.currentStep = 0;
+      seq.nextNoteTime = audioCtx.currentTime + 0.05;
+      seq.timerId = setInterval(seqScheduler, 25);
+      seqPlayBtn.textContent = 'STOP';
+    } else {
+      seq.playing = false;
+      clearInterval(seq.timerId);
+      seq.timerId = null;
+      seqPlayBtn.textContent = 'PLAY';
+      document.querySelectorAll('.seq-cell').forEach(c=>c.classList.remove('playhead'));
+    }
+  });
+
+  const seqGridEl = document.getElementById('seqGrid');
+  SEQ_TRACK_ORDER.forEach(track=>{
+    const row = document.createElement('div');
+    row.className = 'seq-row';
+    const label = document.createElement('span');
+    label.className = 'seq-row-label';
+    label.textContent = track;
+    row.appendChild(label);
+    for(let i=0;i<SEQ_STEPS;i++){
+      const cell = document.createElement('button');
+      cell.className = 'seq-cell' + (i % 4 === 0 ? ' beat' : '');
+      cell.dataset.track = track;
+      cell.dataset.step = i;
+      cell.addEventListener('click', ()=>{
+        const on = !seq.tracks[track][i];
+        seq.tracks[track][i] = on;
+        cell.classList.toggle('on', on);
+      });
+      row.appendChild(cell);
+    }
+    seqGridEl.appendChild(row);
+  });
 
   /* ============================================================
      POWER
@@ -453,7 +790,7 @@
   });
 
   /* ============================================================
-     MIDI (bonus)
+     MIDI
   ============================================================ */
   const midiStatusEl = document.getElementById('midiStatus');
 
@@ -494,7 +831,7 @@
   midiStatusEl.textContent = 'MIDI — power on to connect';
 
   /* ============================================================
-     PRESETS (bonus, uses window.storage — private per user)
+     PRESETS (uses window.storage — private per user)
      Falls back to an in-memory store if window.storage isn't
      available (e.g. this file opened directly outside the
      Claude artifact panel, rather than as a downloaded file).
@@ -539,7 +876,13 @@
       spatialX: state.spatialX,
       spatialZ: state.spatialZ,
       spatialElevation: state.spatialElevation,
-      masterVolume: state.masterVolume
+      masterVolume: state.masterVolume,
+      micDrive: state.micDrive,
+      micDelay: state.micDelay,
+      micFeedback: state.micFeedback,
+      micMix: state.micMix,
+      seqTempo: state.seqTempo,
+      seqTracks: seq.tracks
     };
   }
 
@@ -560,9 +903,27 @@
     if(typeof data.envRelease === 'number') knobs.envRelease.setValue(data.envRelease);
     if(typeof data.spatialElevation === 'number') knobs.spatialElevation.setValue(data.spatialElevation);
     if(typeof data.masterVolume === 'number') knobs.masterVolume.setValue(data.masterVolume);
+    if(typeof data.micDrive === 'number') knobs.micDrive.setValue(data.micDrive);
+    if(typeof data.micDelay === 'number') knobs.micDelay.setValue(data.micDelay);
+    if(typeof data.micFeedback === 'number') knobs.micFeedback.setValue(data.micFeedback);
+    if(typeof data.micMix === 'number') knobs.micMix.setValue(data.micMix);
+    if(typeof data.seqTempo === 'number') knobs.seqTempo.setValue(data.seqTempo);
+
+    if(data.seqTracks){
+      SEQ_TRACK_ORDER.forEach(track=>{
+        if(!Array.isArray(data.seqTracks[track])) return;
+        seq.tracks[track] = data.seqTracks[track].slice(0, SEQ_STEPS);
+        while(seq.tracks[track].length < SEQ_STEPS) seq.tracks[track].push(false);
+        for(let i=0;i<SEQ_STEPS;i++){
+          const cell = document.querySelector('.seq-cell[data-track="'+track+'"][data-step="'+i+'"]');
+          if(cell) cell.classList.toggle('on', !!seq.tracks[track][i]);
+        }
+      });
+    }
 
     setXY(data.spatialX || 0, data.spatialZ || 0);
   }
+
 
   async function refreshPresetList(){
     try{

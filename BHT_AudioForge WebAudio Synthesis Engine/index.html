@@ -74,9 +74,31 @@
       <div class="midi-status" id="midiStatus">MIDI — checking…</div>
     </section>
 
+    <section class="module" id="mod-recorder">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="module-head"><span class="module-index">06</span><h2>Recorder</h2></div>
+      <button id="recToggle" class="ghost-btn" style="width:100%;margin-bottom:10px;">
+        <span class="rec-dot" id="recDot"></span> RECORD
+      </button>
+      <div class="rec-time" id="recTime">00:00</div>
+      <div id="recDownloadWrap" class="rec-download" hidden>
+        <audio id="recPlayback" controls style="width:100%;margin-bottom:8px;"></audio>
+        <a id="recDownloadLink" class="ghost-btn small" style="display:block;text-align:center;" download>DOWNLOAD</a>
+      </div>
+      <p class="rec-note" id="recNote">Captures everything routed through Master — keyboard, sequencer, and mic FX.</p>
+    </section>
+
+    <section class="module" id="mod-mic">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="module-head"><span class="module-index">07</span><h2>Mic FX</h2></div>
+      <button id="micToggle" class="ghost-btn" style="width:100%;margin-bottom:12px;">ENABLE MIC</button>
+      <div class="knob-row" id="micKnobs"></div>
+      <div class="midi-status" id="micStatus">Mic — off. Use headphones to avoid feedback.</div>
+    </section>
+
     <section class="module" id="mod-presets">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
-      <div class="module-head"><span class="module-index">06</span><h2>Presets</h2></div>
+      <div class="module-head"><span class="module-index">08</span><h2>Presets</h2></div>
       <div class="preset-row">
         <input type="text" id="presetName" placeholder="preset name" maxlength="24">
         <button id="savePreset" class="ghost-btn small">SAVE</button>
@@ -92,18 +114,28 @@
   </main>
 
   <section class="scope-panel">
-    <div class="module-head"><span class="module-index">07</span><h2>Visualizer</h2><span class="fps-tag" id="fpsTag">— FPS</span></div>
+    <div class="module-head"><span class="module-index">09</span><h2>Visualizer</h2><span class="fps-tag" id="fpsTag">— FPS</span></div>
     <div class="scope-canvases">
       <canvas id="waveCanvas"></canvas>
       <canvas id="freqCanvas"></canvas>
     </div>
   </section>
 
+  <section class="sequencer-panel">
+    <div class="module-head">
+      <span class="module-index">10</span><h2>Sequencer</h2>
+      <button id="seqPlay" class="ghost-btn small">PLAY</button>
+      <div class="knob-row" id="seqKnobs" style="margin-left:auto;"></div>
+    </div>
+    <div class="seq-grid" id="seqGrid"></div>
+  </section>
+
   <section class="keyboard-panel">
-    <div class="module-head"><span class="module-index">08</span><h2>Keyboard</h2></div>
+    <div class="module-head"><span class="module-index">11</span><h2>Keyboard</h2></div>
     <div class="piano" id="piano"></div>
     <span class="mini-label center">COMPUTER KEYS: A W S E D F T G Y H U J K &nbsp;·&nbsp; OR CONNECT A MIDI DEVICE</span>
   </section>
+
 
   <section class="docs-panel" id="docsPanel" hidden>
     <div class="module-head"><span class="module-index">—</span><h2>Manual</h2></div>
@@ -121,20 +153,28 @@
       <li><b>Envelope</b> — classic ADSR shaping: <code>Attack</code>, <code>Decay</code>, <code>Sustain</code>, <code>Release</code>, applied to every note.</li>
       <li><b>Spatial FX</b> — drag the pad to move the sound source left/right and near/far in 3D space using the WebAudio <code>PannerNode</code> (HRTF). The knob controls elevation.</li>
       <li><b>Master</b> — overall output volume, plus live MIDI connection status.</li>
+      <li><b>Recorder</b> — records everything passing through Master (keyboard, sequencer, mic FX) to an audio file you can play back and download.</li>
+      <li><b>Mic FX</b> — bring in your microphone and run it through a live drive/delay effects chain, mixed into the main output.</li>
+      <li><b>Presets</b> — save the full state of every module and reload it later.</li>
       <li><b>Visualizer</b> — a real-time oscilloscope (waveform) and spectrum analyzer, rendered on <code>&lt;canvas&gt;</code> via <code>requestAnimationFrame</code>, with a live FPS counter.</li>
+      <li><b>Sequencer</b> — a 4-track, 16-step drum and lead sequencer with its own sample-accurate clock, independent of the keyboard.</li>
     </ul>
 
     <h3>Controls</h3>
     <ul>
       <li>Knobs: click and drag up/down to change value. Scroll wheel over a knob also nudges it.</li>
       <li>Keyboard mapping: <code>A W S E D F T G Y H U J K</code> = one octave, chromatic, starting at C.</li>
+      <li>Sequencer: click any cell to toggle a step on/off, then press <code>PLAY</code>. The <code>Tempo</code> knob sets BPM.</li>
+      <li>Mic FX: click <code>ENABLE MIC</code> and allow microphone access. Use headphones — playing through speakers will cause feedback.</li>
+      <li>Recorder: click <code>RECORD</code>, play, then click again to stop — a playback player and download link appear underneath.</li>
     </ul>
 
-    <h3>Bonus features</h3>
+    <h3>Additional capabilities</h3>
     <ul>
-      <li><b>Presets</b> — save the full state of every module to your account (cloud-synced, private to you) and reload it later.</li>
       <li><b>3D spatial audio</b> — the Spatial FX module positions notes in 3D space around the listener using HRTF panning.</li>
       <li><b>MIDI keyboard support</b> — connect a class-compliant MIDI keyboard; note on/off messages play the synth directly. If your browser or environment blocks MIDI access, the status line explains why.</li>
+      <li><b>Live microphone effects</b> — the Mic FX module runs your voice or instrument through a drive (distortion) and delay chain in real time.</li>
+      <li><b>Multi-track sequencing</b> — the Sequencer runs kick, snare, hi-hat, and lead tracks together on one shared clock.</li>
     </ul>
   </section>
 
